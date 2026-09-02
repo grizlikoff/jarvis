@@ -587,6 +587,11 @@ bash scripts/run_linux.sh
 
 Running from source enables Chatterbox TTS (AI voice with emotion/cloning). Piper TTS works in both bundled and source modes.
 
+On Intel macOS (for example MacBook Pro 15,1), Chatterbox/Torch is skipped
+because upstream does not publish a compatible wheel; Piper and offline
+dictation remain available. To build a macOS app, install the requirements and
+run `bash scripts/build_installer.sh`; the bundle is written to `dist/Jarvis.app`.
+
 </details>
 
 <details>
