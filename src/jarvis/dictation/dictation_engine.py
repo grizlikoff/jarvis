@@ -42,6 +42,37 @@ except Exception as _pynput_import_error:
     debug_log(f"pynput unavailable, dictation hotkey disabled: {_pynput_import_error!r}", "dictation")
 
 
+def _patch_pynput_macos_tsm_threading() -> None:
+    """Avoid pynput's TSM lookup from its background listener thread.
+
+    Recent macOS releases assert that Text Services Manager calls run on the
+    main dispatch queue.  pynput performs ``keycode_context()`` in the
+    listener thread even though Jarvis only needs virtual key codes and
+    modifier flags for its dictation hotkey.  Skipping that unused layout
+    lookup keeps the CGEvent tap intact while avoiding the process-killing
+    TSM assertion.
+    """
+    if sys.platform != "darwin" or pynput_keyboard is None:
+        return
+    try:
+        from pynput._util.darwin import ListenerMixin
+
+        def _safe_run(listener):
+            listener._context = (None, None)
+            try:
+                ListenerMixin._run(listener)
+            finally:
+                listener._context = None
+
+        pynput_keyboard.Listener._run = _safe_run
+        debug_log("patched pynput macOS listener to skip background TSM lookup", "dictation")
+    except Exception as exc:
+        debug_log(f"could not patch pynput macOS listener: {exc!r}", "dictation")
+
+
+_patch_pynput_macos_tsm_threading()
+
+
 # ---------------------------------------------------------------------------
 # Beep generation
 # ---------------------------------------------------------------------------
